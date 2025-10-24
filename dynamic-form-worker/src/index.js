@@ -1,13 +1,106 @@
 export default {
   async fetch(request, env) {
+    // ---------------------------
+    // 🔒 DOMAIN RESTRICTION
+    // ---------------------------
+    // TODO: Add your allowed domains to this array
+    // ALL SUBDOMAINS are automatically allowed for each domain!
+    // 
+    // Examples:
+    //   - Add "example.com" → allows example.com, www.example.com, blog.example.com, etc.
+    //   - Add "partner.com" → allows partner.com, www.partner.com, api.partner.com, etc.
+    //   - Add "localhost:3000" for local testing (remove in production)
+    const ALLOWED_DOMAINS = [
+      "yourdomain.com",      // TODO: Replace with your actual domain
+      "localhost:3000",      // Remove this in production
+      "localhost:5173",      // Remove this in production (Vite default)
+      "127.0.0.1:3000"       // Remove this in production
+    ];
+
+    // Function to check if a domain is allowed (including subdomains)
+    function isAllowedDomain(domain) {
+      // Check if domain matches exactly
+      if (ALLOWED_DOMAINS.includes(domain)) {
+        return true;
+      }
+      
+      // Check if domain is a subdomain of any allowed domain
+      for (const allowedDomain of ALLOWED_DOMAINS) {
+        // Skip localhost/IP entries for subdomain check
+        if (allowedDomain.includes("localhost") || allowedDomain.includes("127.0.0.1")) {
+          continue;
+        }
+        
+        // Check if current domain ends with .allowedDomain
+        if (domain.endsWith("." + allowedDomain)) {
+          return true;
+        }
+      }
+      
+      return false;
+    }
+
+    // Check if request is from allowed domain
+    const origin = request.headers.get("Origin");
+    const referer = request.headers.get("Referer");
+    
+    let isAllowed = false;
+    let allowedOrigin = null;
+
+    // Check Origin header first (preferred for CORS)
+    if (origin) {
+      try {
+        const originUrl = new URL(origin);
+        const originDomain = originUrl.host;
+        
+        if (isAllowedDomain(originDomain)) {
+          isAllowed = true;
+          allowedOrigin = origin;
+        }
+      } catch (e) {
+        // Invalid origin URL
+      }
+    }
+    
+    // Fallback to Referer header if Origin is not present
+    if (!isAllowed && referer) {
+      try {
+        const refererUrl = new URL(referer);
+        const refererDomain = refererUrl.host;
+        
+        if (isAllowedDomain(refererDomain)) {
+          isAllowed = true;
+          allowedOrigin = refererUrl.origin;
+        }
+      } catch (e) {
+        // Invalid referer URL
+      }
+    }
+
+    // Block unauthorized requests
+    if (!isAllowed) {
+      return new Response(JSON.stringify({
+        error: "Forbidden",
+        message: "Access denied. This form is only accessible from authorized domains."
+      }), {
+        status: 403,
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+    }
+
+    // ---------------------------
     // Handle OPTIONS preflight request for CORS
+    // ---------------------------
     if (request.method === "OPTIONS") {
       return new Response(null, {
         status: 204,
         headers: {
-          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Origin": allowedOrigin,
           "Access-Control-Allow-Methods": "POST, OPTIONS",
           "Access-Control-Allow-Headers": "Content-Type",
+          "Access-Control-Max-Age": "86400"
         },
       });
     }
@@ -45,10 +138,8 @@ export default {
         data = Object.fromEntries(new URLSearchParams(formText));
       }
 
-      console.log(`Form parsed. Fields: ${Object.keys(data).length}, Attachments: ${attachments.length}`);
-
       // ---------------------------
-      // 2️⃣ Verify Turnstile if present
+      // 2️⃣ Verify Turnstile if present (Optional)
       // ---------------------------
       // TODO: Add your Cloudflare Turnstile secret key to env.TURNSTILE_SECRET
       // Get your Turnstile keys from: https://dash.cloudflare.com/?to=/:account/turnstile
@@ -73,7 +164,7 @@ export default {
             status: 400,
             headers: {
               "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": "*"
+              "Access-Control-Allow-Origin": allowedOrigin
             }
           });
         }
@@ -135,8 +226,8 @@ export default {
       // ---------------------------
       // TODO: Set these environment variables in your Cloudflare Worker:
       // - SMTP2GO_API_KEY: Your SMTP2GO API key (get it from https://www.smtp2go.com/)
-      // - RECIPIENT_EMAIL: The email address where you want to receive form submissions (e.g., "your-email@example.com")
-      // - SENDER_EMAIL: The email address to send from (e.g., "noreply@yourdomain.com")
+      // - RECIPIENT_EMAIL: The email address where you want to receive form submissions
+      // - SENDER_EMAIL: The email address to send from (must be verified in SMTP2GO)
       const emailPayload = {
         api_key: env.SMTP2GO_API_KEY,
         to: [env.RECIPIENT_EMAIL],
@@ -165,7 +256,7 @@ export default {
           status: 500,
           headers: {
             "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*"
+            "Access-Control-Allow-Origin": allowedOrigin
           }
         });
       }
@@ -178,7 +269,7 @@ export default {
         status: 200,
         headers: {
           "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*"
+          "Access-Control-Allow-Origin": allowedOrigin
         }
       });
 
@@ -191,7 +282,7 @@ export default {
         status: 500,
         headers: {
           "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*"
+          "Access-Control-Allow-Origin": allowedOrigin
         }
       });
     }
