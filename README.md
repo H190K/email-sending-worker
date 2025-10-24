@@ -2,8 +2,10 @@
 
 > A secure, domain-restricted Cloudflare Worker that handles contact form submissions with Turnstile verification, file attachments, and SMTP2GO email delivery. Features automatic subdomain support and dynamic form field parsing—no backend required, just pure serverless magic.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
-[![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-orange?style=for-the-badge&logo=cloudflare)](https://workers.cloudflare.com/)
+[![GitHub](https://img.shields.io/badge/GitHub-H190K-181717?style=for-the-badge&logo=github)](https://github.com/H190K)
+[![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
+[![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)](https://workers.cloudflare.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
 ## ✨ Features
 
