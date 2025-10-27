@@ -11,6 +11,8 @@
 
 - 🔒 **Domain Whitelist** - Restrict access to your specified domains only
 - 🌐 **Automatic Subdomain Support** - Add one domain, all subdomains work automatically
+- 🔌 **Automatic Port Handling** - Works with any port (localhost:3000, localhost:8080, etc.)
+- 🌍 **Wildcard Support** - Use `["*"]` to allow all domains during development
 - ✅ **Turnstile CAPTCHA** - Bot protection with Cloudflare Turnstile
 - 📎 **File Attachments** - Upload and receive files via email
 - 🎯 **Dynamic Form Fields** - Works with any form structure automatically
@@ -44,14 +46,14 @@ wrangler deploy
 
 **IMPORTANT:** This worker includes domain restrictions for security. You must configure allowed domains before deployment.
 
-### Edit `index.js` (Lines 16-22)
+### Edit `index.js` (Lines 14-20)
 
 ```javascript
 const ALLOWED_DOMAINS = [
   "yourdomain.com",      // Replace with your actual domain
-  "localhost:3000",      // Remove this in production
-  "localhost:5173",      // Remove this in production
-  "127.0.0.1:3000"       // Remove this in production
+  "localhost",           // Remove this in production (ports handled automatically)
+  "127.0.0.1"            // Remove this in production (ports handled automatically)
+  // Or use ["*"] to allow ALL domains (not recommended for production)
 ];
 ```
 
@@ -59,6 +61,8 @@ const ALLOWED_DOMAINS = [
 
 When you add a domain like `"example.com"`, these are **automatically allowed**:
 - ✅ `example.com`
+- ✅ `example.com:3000` (any port)
+- ✅ `example.com:8080` (any port)
 - ✅ `www.example.com`
 - ✅ `blog.example.com`
 - ✅ `shop.example.com`
@@ -69,13 +73,28 @@ When you add a domain like `"example.com"`, these are **automatically allowed**:
 - ❌ Direct API calls without proper origin
 - ❌ Unauthorized domains
 
+### Advanced Configuration
+
+**Allow all domains (for testing only):**
+```javascript
+const ALLOWED_DOMAINS = ["*"];  // ⚠️ Not recommended for production
+```
+
+**Automatic port handling:**
+
+All ports are automatically supported! Just add the base domain:
+- Add `"localhost"` → Works with `localhost:3000`, `localhost:8080`, `localhost:5173`, etc.
+- Add `"example.com"` → Works with `example.com:3000`, `example.com:8080`, etc.
+
+No need to specify ports explicitly anymore! 🎉
+
 ### Adding Multiple Domains
 
 ```javascript
 const ALLOWED_DOMAINS = [
-  "example.com",         // Main site + all subdomains
-  "partner.com",         // Partner site + all subdomains
-  "another-site.com",    // Another domain + all subdomains
+  "example.com",         // Main site + all subdomains + all ports
+  "partner.com",         // Partner site + all subdomains + all ports
+  "another-site.com",    // Another domain + all subdomains + all ports
 ];
 ```
 
@@ -116,6 +135,7 @@ This worker provides a complete contact form solution with:
 
 ### Security
 - 🔒 Domain whitelist with automatic subdomain support
+- 🔌 Automatic port handling for all environments
 - 🛡️ Turnstile CAPTCHA verification
 - 🚫 Blocks unauthorized domains (403 Forbidden)
 - 🔑 Origin/Referer header validation
@@ -130,6 +150,7 @@ This worker provides a complete contact form solution with:
 ### Developer Experience
 - ⚡ Serverless architecture (zero maintenance)
 - 🔄 Works with any form structure
+- 🌍 Wildcard support for development
 - 📝 Comprehensive error handling
 - 🚀 Easy deployment with Wrangler CLI
 
@@ -378,9 +399,10 @@ The worker returns JSON responses:
 
 1. **Always use HTTPS** for your forms
 2. **Remove localhost entries** from `ALLOWED_DOMAINS` in production
-3. **Enable Turnstile** for all public forms
-4. **Verify sender email** in SMTP2GO before deploying
-5. **Encrypt environment variables** in Cloudflare dashboard
+3. **Never use `["*"]` wildcard** in production environments
+4. **Enable Turnstile** for all public forms
+5. **Verify sender email** in SMTP2GO before deploying
+6. **Encrypt environment variables** in Cloudflare dashboard
 
 ---
 
@@ -392,6 +414,18 @@ The worker returns JSON responses:
 2. **Create a test form** on an unauthorized domain
 3. **Submit the form** - should receive `403 Forbidden`
 4. **Host on authorized domain** - should work! ✅
+
+### Test Port Handling
+
+1. **Add `"localhost"`** to `ALLOWED_DOMAINS`
+2. **Test from different ports:** `localhost:3000`, `localhost:8080`, `localhost:5173`
+3. **All ports should work** without adding them explicitly! ✅
+
+### Test Wildcard Support
+
+1. **Set `ALLOWED_DOMAINS = ["*"]`** for testing
+2. **Submit from any domain** - should work! ✅
+3. **Remember to restrict domains** before production deployment
 
 ### Test Turnstile
 
@@ -474,6 +508,7 @@ The worker returns JSON responses:
 1. Check if your domain is in `ALLOWED_DOMAINS` array
 2. Verify you're using the correct protocol (http/https)
 3. Check browser console for Origin/Referer headers
+4. Make sure you're not using explicit ports in the array (they're automatic now!)
 
 ### Turnstile Verification Failed
 
@@ -499,6 +534,15 @@ The worker returns JSON responses:
 1. Verify your domain is in `ALLOWED_DOMAINS`
 2. Check that worker is returning proper CORS headers
 3. Ensure you're making requests from the correct origin
+4. Try using wildcard `["*"]` temporarily to test
+
+### Port-Related Issues
+
+**Problem:** Form works on one port but not another
+**Solution:**
+1. **Remove explicit ports** from `ALLOWED_DOMAINS` (e.g., use `"localhost"` not `"localhost:3000"`)
+2. Ports are now handled automatically - no need to specify them!
+3. Redeploy the worker after updating the domain array
 
 ---
 
@@ -511,6 +555,7 @@ The worker returns JSON responses:
 | **Maintenance** | Zero | Regular updates |
 | **Scalability** | Auto-scales | Manual scaling |
 | **Security** | Built-in domain restrictions | Manual implementation |
+| **Port Handling** | ✅ Automatic | ❌ Manual config |
 | **File Uploads** | ✅ Supported | ✅ Supported |
 | **CAPTCHA** | ✅ Turnstile | Needs integration |
 | **Email** | ✅ SMTP2GO | Needs setup |
