@@ -9,18 +9,26 @@ export default {
     // Examples:
     //   - Add "example.com" → allows example.com, www.example.com, blog.example.com, etc.
     //   - Add "partner.com" → allows partner.com, www.partner.com, api.partner.com, etc.
-    //   - Add "localhost:3000" for local testing (remove in production)
+    //   - Add "localhost" or "127.0.0.1" for local testing (ports are automatically handled)
+    //   - Add "*" to allow ALL domains (not recommended for production)
     const ALLOWED_DOMAINS = [
       "yourdomain.com",      // TODO: Replace with your actual domain
-      "localhost:3000",      // Remove this in production
-      "localhost:5173",      // Remove this in production (Vite default)
-      "127.0.0.1:3000"       // Remove this in production
+      "localhost",           // Remove this in production
+      "127.0.0.1"            // Remove this in production
     ];
 
     // Function to check if a domain is allowed (including subdomains)
     function isAllowedDomain(domain) {
+      // If "*" is in the array, allow everything
+      if (ALLOWED_DOMAINS.includes("*")) {
+        return true;
+      }
+
+      // Extract hostname without port (e.g., "localhost:3000" → "localhost")
+      const hostname = domain.split(':')[0];
+
       // Check if domain matches exactly
-      if (ALLOWED_DOMAINS.includes(domain)) {
+      if (ALLOWED_DOMAINS.includes(hostname)) {
         return true;
       }
       
@@ -32,7 +40,7 @@ export default {
         }
         
         // Check if current domain ends with .allowedDomain
-        if (domain.endsWith("." + allowedDomain)) {
+        if (hostname.endsWith("." + allowedDomain)) {
           return true;
         }
       }
@@ -144,7 +152,7 @@ export default {
       // TODO: Add your Cloudflare Turnstile secret key to env.TURNSTILE_SECRET
       // Get your Turnstile keys from: https://dash.cloudflare.com/?to=/:account/turnstile
       const turnstileToken = data["cf-turnstile-response"];
-      if (turnstileToken) {
+      if (turnstileToken && env.TURNSTILE_SECRET) {
         const ip = request.headers.get("CF-Connecting-IP");
         const turnstileForm = new FormData();
         turnstileForm.append("secret", env.TURNSTILE_SECRET);
